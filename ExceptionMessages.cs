@@ -11,5 +11,7 @@
         public const string NewsLoggerNotFound = "Failed while reading: {0}";
 
         public const string NewsNotFound = "News Not Found";
+
+        public const string TagValidationError = "Tag validation model failed";
     }
 }

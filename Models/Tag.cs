@@ -9,6 +9,5 @@
         public int NewsId { get; set; }
 
         public News News { get; set; }
-
     }
 }

@@ -28,7 +28,10 @@ namespace MinimalAPISample.Services
             return news;
         }
 
-        public async Task<News?> GetByIdAsync(int id) => await this.dbContext.News
-            .FirstOrDefaultAsync(x=> x.Id == id);
+        public async Task<News?> GetByIdAsync(int id) 
+            => await this.dbContext.News
+            .Where(x=> x.Id == id)
+            .Include(x=> x.Tags)
+            .FirstOrDefaultAsync();
     }
 }

@@ -20,6 +20,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddTransient<INewsService, NewsService>();
+builder.Services.AddTransient<ITagService, TagService>();
 
 var app = builder.Build();
 
@@ -48,7 +49,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 
-
+//news
 app.MapGet("/news/{id:int}", async (int id, INewsService service) =>
 {
     try
@@ -102,5 +103,36 @@ app.MapPost("/news", async (INewsService service, NewsRequestModel requestModel)
     .WithName("createNews")
     .ProducesValidationProblem()
     .Produces<NewsRequestModel>(StatusCodes.Status201Created);
+
+
+//tags
+app.MapPost("/tags", async (ITagService tagService, TagRequestModel requestModel) =>
+{
+    if (!MiniValidator.TryValidate(requestModel, out var errors))
+    {
+        logger.LogError(ExceptionMessages.TagValidationError);
+        return Results.ValidationProblem(errors);
+    }
+
+    try
+    {
+        var tag = await tagService.CreateAsync(requestModel);
+
+        var tagResponseModel = mapper.Map<TagResponseModel>(tag);
+
+        logger.LogInformation(LoggerSucessfulMessages.TagSucessfullyCreated);
+
+        return Results.Created($"/tags/{tagResponseModel.Id}", tagResponseModel);
+    }
+    catch (Exception ex)
+    {
+        logger.LogInformation("Error from Tag endpoint. News not found !!!");
+        return Results.BadRequest(ex.Message);
+    }
+
+}).WithName("createTag")
+.ProducesValidationProblem()
+.Produces<TagResponseModel>(StatusCodes.Status201Created)
+.Produces(StatusCodes.Status400BadRequest);
 
 app.Run();
