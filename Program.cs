@@ -4,6 +4,7 @@ using MinimalAPISample;
 using MinimalAPISample.Data;
 using MinimalAPISample.Dtos;
 using MinimalAPISample.Services;
+using MiniValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +30,8 @@ if (mapper == null)
     throw new InvalidOperationException(ExceptionMessages.MapperError);
 }
 
-var logger = app.Services.GetService<ILogger>();
+var loggerFactory = app.Services.GetService<ILoggerFactory>();
+var logger = loggerFactory?.CreateLogger<Program>();
 
 if (logger == null)
 {
@@ -55,10 +57,13 @@ app.MapGet("/news/{id:int}", async (int id, INewsService service) =>
 
         if (news == null)
         {
+            logger.LogError(ExceptionMessages.NewsNotFound);
             return Results.NotFound();
         }
 
         var mappedNews = mapper.Map<NewsResponseModel>(news);
+
+        logger.LogInformation(string.Format(LoggerSucessfulMessages.GetNewsSuccesfully, id));
 
         return Results.Ok(mappedNews);
 
@@ -72,6 +77,30 @@ app.MapGet("/news/{id:int}", async (int id, INewsService service) =>
     return Results.BadRequest();
 
 })
-.WithName("news");
+.WithName("newsById")
+.ProducesValidationProblem()
+.Produces(StatusCodes.Status404NotFound)
+.Produces<NewsRequestModel>(StatusCodes.Status200OK);
+
+app.MapPost("/news", async (INewsService service, NewsRequestModel requestModel) =>
+{
+    if(!MiniValidator.TryValidate(requestModel, out var errors))
+    {
+        logger.LogError(ExceptionMessages.NewsValidationError);
+        return Results.ValidationProblem(errors);
+    }
+
+    var news = await service.CreateAsync(requestModel); 
+
+    var newsResponseModel = mapper.Map<NewsResponseModel>(news);
+
+    logger.LogInformation(LoggerSucessfulMessages.CreateNewsSuccesfully);
+
+    return Results.Created($"/news/{newsResponseModel.Id}", newsResponseModel);
+
+})
+    .WithName("createNews")
+    .ProducesValidationProblem()
+    .Produces<NewsRequestModel>(StatusCodes.Status201Created);
 
 app.Run();

@@ -9,6 +9,8 @@ namespace MinimalAPISample
         public AppMappingProfile()
         {
             CreateMap<News, NewsResponseModel>().ReverseMap();
+            CreateMap<News, NewsRequestModel>().ReverseMap();
+
         }
     }
 }
